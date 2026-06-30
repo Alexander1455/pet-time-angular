@@ -258,4 +258,4 @@ La aplicación estará disponible en **http://localhost:4200**.
 
 ## 👨‍💻 Autor
 
-Proyecto académico — Migración React → Angular 19
+Proyecto académico - Angular 19

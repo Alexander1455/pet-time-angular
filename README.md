@@ -23,13 +23,14 @@
 
 ## 🎬 Demo y Pantallas
 
-| Login | Registro (Wizard) | Dashboard |
-|-------|------------------|-----------|
-| Email + contraseña con validación | 3 pasos: sesión → dueño → mascota | Mascotas, categorías y próximas citas |
+### Vista Escritorio (Panel Cliente)
+![Dashboard cliente en escritorio](file:///C:/Users/Upgrade/.gemini/antigravity-ide/brain/2543e41a-d286-417c-ba7d-0577e2cc0e3d/dashboard_desktop_1783196496626.png)
 
-| Servicios | Historial | Perfil |
-|-----------|-----------|--------|
-| Catálogo con filtros y booking | Gestión de citas + historial filtrables | Estadísticas, edición y cierre de sesión |
+### Vista Escritorio (Panel Veterinario)
+![Dashboard veterinario en escritorio](file:///C:/Users/Upgrade/.gemini/antigravity-ide/brain/2543e41a-d286-417c-ba7d-0577e2cc0e3d/doctor_dashboard_1783196556371.png)
+
+### Vista Móvil (Panel Cliente)
+![Dashboard cliente en móvil](file:///C:/Users/Upgrade/.gemini/antigravity-ide/brain/2543e41a-d286-417c-ba7d-0577e2cc0e3d/dashboard_mobile_1783196504408.png)
 
 ---
 
@@ -55,22 +56,25 @@ src/app/
 │   ├── guards/
 │   │   └── auth.guard.ts              # Guard funcional de autenticación
 │   └── services/
-│       ├── auth.service.ts            # Gestión de sesión con BehaviorSubject
+│       ├── auth.service.ts            # Gestión de sesión con BehaviorSubject y cambio de rol
 │       ├── pet.service.ts             # CRUD mascotas + PetFactory
-│       └── appointment.service.ts     # CRUD citas + historial reactivo
+│       ├── appointment.service.ts     # CRUD citas + historial + ficha clínica reactiva
+│       └── doctor.service.ts          # Gestión de doctores, especialidades y horarios
 │
 ├── models/
-│   ├── user.model.ts                  # Interface User, LoginCredentials, RegisterData
+│   ├── user.model.ts                  # Interface User, LoginCredentials, RegisterData, DoctorRegisterData
 │   ├── pet.model.ts                   # Abstract Pet + Dog + Cat + OtherPet + PetFactory
-│   ├── appointment.model.ts           # Interface Appointment + catálogo de servicios
-│   └── sede.model.ts                  # Interface Sede + SEDES[]
+│   ├── appointment.model.ts           # Interface Appointment + catálogo + MedicalRecord
+│   └── doctor.model.ts                # Interface Doctor + DEFAULT_DOCTORS[]
 │
 ├── shared/
 │   ├── components/
 │   │   ├── input-field/               # InputFieldComponent (@Input/@Output)
 │   │   ├── service-card/              # ServiceCardComponent (@Input/@Output)
-│   │   ├── bottom-nav/               # BottomNavComponent
-│   │   └── modal/                    # ModalComponent (ng-content)
+│   │   ├── bottom-nav/                # BottomNavComponent (visible en móvil)
+│   │   ├── sidebar/                   # SidebarComponent (visible en escritorio)
+│   │   ├── demo-switcher/             # DemoSwitcherComponent (flotante para demostración)
+│   │   └── modal/                     # ModalComponent (ng-content)
 │   ├── directives/
 │   │   └── highlight-appointment.directive.ts  ← DIRECTIVA PERSONALIZADA
 │   └── pipes/
@@ -78,14 +82,14 @@ src/app/
 │
 ├── features/
 │   ├── auth/
-│   │   ├── login/                    # LoginComponent (Reactive Form)
-│   │   └── register/                 # RegisterComponent (Wizard 3 pasos)
+│   │   ├── login/                    # LoginComponent (Reactive Form con detección de rol)
+│   │   └── register/                 # RegisterComponent (Wizard Dueño / Formulario Doctor)
 │   │       ├── step-one/             # Email + contraseña
 │   │       ├── step-two/             # Datos del dueño
-│   │       └── step-three/           # Datos de la mascota
-│   ├── dashboard/                    # DashboardComponent (Home)
-│   ├── appointments/                 # AppointmentsComponent (Servicios + Booking)
-│   ├── history/                      # HistoryComponent (Historial)
+│   │       └── step-three/           # Datos de la mascota (con condicional "Otro")
+│   ├── dashboard/                    # DashboardComponent (Vista dual Cliente / Doctor)
+│   ├── appointments/                 # AppointmentsComponent (Servicios + Booking por doctor y horario)
+│   ├── history/                      # HistoryComponent (Historial con Fichas Clínicas)
 │   └── profile/                      # ProfileComponent (Perfil)
 │
 ├── app.component.ts                  # Root component
@@ -101,13 +105,15 @@ src/app/
 
 | Interface | Archivo | Descripción |
 |-----------|---------|-------------|
-| `User` | `user.model.ts` | Datos del usuario autenticado |
+| `User` | `user.model.ts` | Datos del usuario autenticado (con soporte de roles) |
 | `LoginCredentials` | `user.model.ts` | Datos de inicio de sesión |
-| `RegisterData` | `user.model.ts` | Datos del formulario de registro |
+| `RegisterData` | `user.model.ts` | Datos del formulario de registro de cliente |
+| `DoctorRegisterData` | `user.model.ts` | Datos del formulario de registro de doctor |
 | `Appointment` | `appointment.model.ts` | Cita veterinaria |
 | `BookingFormData` | `appointment.model.ts` | Formulario de reserva |
+| `MedicalRecord` | `appointment.model.ts` | Ficha clínica completada por el doctor |
 | `ServiceItem` | `appointment.model.ts` | Servicio del catálogo |
-| `Sede` | `sede.model.ts` | Sucursal de PetTime |
+| `Doctor` | `doctor.model.ts` | Perfil del veterinario, especialidad y horarios |
 | `PetData` | `pet.model.ts` | Serialización plana de mascota |
 
 ### Abstracción
@@ -243,14 +249,18 @@ La aplicación estará disponible en **http://localhost:4200**.
 
 ## ✨ Características
 
-- 🔐 **Autenticación** — Login y registro con persistencia en `localStorage`
-- 📝 **Formularios Reactivos** — `FormBuilder`, `Validators`, validadores personalizados
-- 🧩 **Arquitectura Modular** — Features separados con Lazy Loading
+- 🔐 **Autenticación** — Login y registro con persistencia en `localStorage` (auto-detecta doctores)
+- 👥 **Múltiples Roles (B2B/B2C)** — Portal dual para Clientes (dueños) y Doctores (veterinarios)
+- 📝 **Fichas Clínicas** — Doctores pueden registrar el tratamiento, medicamentos y recomendaciones médicas
+- 🎭 **Demo Switcher Widget** — Cambia de rol en la presentación con un solo clic en el botón flotante
+- 📐 **Responsividad Premium** — Sidebar oscuro para pantallas grandes (desktop) y Bottom Nav para móviles
+- 🩺 **Booking Dinámico** — Selección de doctor por especialidad y horarios libres en tiempo real
+- 🐇 **Mascotas Especiales** — Entrada condicional interactiva al elegir "Otro" tipo de mascota
+- 🧩 **Arquitectura Modular** — Features separados con Lazy Loading y standalone components
 - 🛡️ **Rutas Protegidas** — `AuthGuard` funcional de Angular 19
 - 🐾 **Gestión de Mascotas** — POO con herencia: `Dog`, `Cat`, `OtherPet`
 - 📅 **Gestión de Citas** — Agendar, confirmar, completar y cancelar
 - 📊 **Estado Reactivo** — `BehaviorSubject` + `Observable` (RxJS)
-- 🎨 **Bootstrap 5** — Interfaz responsive y mobile-first
 - 🔧 **Pipe Personalizado** — `AppointmentStatusPipe` (status → español)
 - 💡 **Directiva Personalizada** — `HighlightAppointmentDirective` (resaltado de fechas)
 
@@ -258,4 +268,4 @@ La aplicación estará disponible en **http://localhost:4200**.
 
 ## 👨‍💻 Autor
 
-Proyecto académico — Migración React → Angular 19
+Proyecto académico — Angular 19

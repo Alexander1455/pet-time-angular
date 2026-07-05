@@ -268,4 +268,8 @@ La aplicación estará disponible en **http://localhost:4200**.
 
 ## 👨‍💻 Autor
 
+<<<<<<< HEAD
 Proyecto académico — Angular 19
+=======
+Proyecto académico - Angular 19
+>>>>>>> bed495867064c2f34f7af88fdcbde8c518808a60

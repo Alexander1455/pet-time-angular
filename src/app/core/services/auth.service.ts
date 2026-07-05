@@ -3,14 +3,15 @@
 // Servicio de autenticación de PetTime.
 // Gestiona el estado del usuario autenticado usando BehaviorSubject
 // y persiste la sesión en localStorage.
-//
-// REEMPLAZA: AppContext (LOGIN, LOGOUT, SET_USER actions)
+// Soporta roles: 'client' (dueño de mascota) y 'doctor' (veterinario).
 // ============================================================
 
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { User, LoginCredentials, RegisterData } from '../../models/user.model';
+import { User, LoginCredentials, RegisterData, DoctorRegisterData } from '../../models/user.model';
+import { DoctorService } from './doctor.service';
+import { Doctor, DEFAULT_DOCTORS } from '../../models/doctor.model';
 
 const AUTH_KEY = 'pettime_auth_state';
 
@@ -31,6 +32,18 @@ export class AuthService {
     map(user => user !== null)
   );
 
+  /** Stream reactivo del rol del usuario */
+  readonly userRole$: Observable<'client' | 'doctor' | null> = this.currentUser$.pipe(
+    map(user => user?.role ?? null)
+  );
+
+  /** Verdadero si el usuario actual es doctor */
+  readonly isDoctor$: Observable<boolean> = this.currentUser$.pipe(
+    map(user => user?.role === 'doctor')
+  );
+
+  constructor(private readonly doctorService: DoctorService) {}
+
   // ── Getters síncronos ─────────────────────────────────────
 
   /** Retorna el usuario actual de forma síncrona */
@@ -43,29 +56,48 @@ export class AuthService {
     return this.currentUserSubject.value !== null;
   }
 
+  /** Retorna true si el usuario actual es doctor */
+  isDoctor(): boolean {
+    return this.currentUserSubject.value?.role === 'doctor';
+  }
+
   // ── Métodos de sesión ─────────────────────────────────────
 
   /**
    * Simula el inicio de sesión con email y contraseña.
-   * En producción, aquí iría una llamada HTTP al backend.
-   * @returns Promise<void> resuelve tras simular la latencia
+   * Detecta automáticamente si el email corresponde a un doctor registrado.
    */
   async login(credentials: LoginCredentials): Promise<void> {
-    // Simula latencia de servidor
     await this.delay(1000);
 
-    const user: User = {
-      name: 'Alexander',
-      email: credentials.email,
-      avatar: credentials.email[0].toUpperCase(),
-    };
+    // Verificar si el email corresponde a un doctor
+    const doctor = this.doctorService.findByEmail(credentials.email);
 
-    this.setUser(user);
+    if (doctor) {
+      // Login como Doctor
+      const user: User = {
+        name: doctor.name,
+        email: doctor.email,
+        avatar: doctor.name[0].toUpperCase(),
+        role: 'doctor',
+        specialty: doctor.specialty,
+        doctorId: doctor.id,
+      };
+      this.setUser(user);
+    } else {
+      // Login como Cliente
+      const user: User = {
+        name: credentials.email.split('@')[0],
+        email: credentials.email,
+        avatar: credentials.email[0].toUpperCase(),
+        role: 'client',
+      };
+      this.setUser(user);
+    }
   }
 
   /**
-   * Simula el registro de un nuevo usuario.
-   * Crea el usuario con los datos de los 3 pasos del wizard.
+   * Simula el registro de un nuevo cliente (dueño de mascota).
    */
   async register(data: RegisterData): Promise<void> {
     await this.delay(1200);
@@ -74,6 +106,7 @@ export class AuthService {
       name: `${data.nombres} ${data.apellidos}`,
       email: data.email,
       avatar: data.nombres[0].toUpperCase(),
+      role: 'client',
       nombres: data.nombres,
       apellidos: data.apellidos,
       dni: data.dni,
@@ -82,6 +115,66 @@ export class AuthService {
     };
 
     this.setUser(user);
+  }
+
+  /**
+   * Registra un nuevo doctor/veterinario en el sistema.
+   */
+  async registerDoctor(data: DoctorRegisterData): Promise<void> {
+    await this.delay(1200);
+
+    const doctorId = `doc-${Date.now()}`;
+
+    // Crear el doctor en el servicio de doctores
+    const newDoctor: Doctor = {
+      id: doctorId,
+      name: `${data.nombres} ${data.apellidos}`,
+      email: data.email,
+      password: data.password,
+      specialty: data.specialty as Doctor['specialty'],
+      availabilities: data.availabilities,
+    };
+    this.doctorService.addDoctor(newDoctor);
+
+    // Iniciar sesión automáticamente como doctor
+    const user: User = {
+      name: newDoctor.name,
+      email: newDoctor.email,
+      avatar: data.nombres[0].toUpperCase(),
+      role: 'doctor',
+      specialty: data.specialty,
+      doctorId: doctorId,
+    };
+    this.setUser(user);
+  }
+
+  /**
+   * Cambia el rol de sesión para demostración (Demo Switcher).
+   * No afecta los datos del sistema — solo cambia la perspectiva activa.
+   */
+  switchDemoRole(targetRole: 'client' | 'doctor'): void {
+    if (targetRole === 'doctor') {
+      // Cambiar a sesión del primer doctor por defecto
+      const doctor = this.doctorService.doctors[0] ?? DEFAULT_DOCTORS[0];
+      const user: User = {
+        name: doctor.name,
+        email: doctor.email,
+        avatar: doctor.name[0].toUpperCase(),
+        role: 'doctor',
+        specialty: doctor.specialty,
+        doctorId: doctor.id,
+      };
+      this.setUser(user);
+    } else {
+      // Cambiar a sesión del cliente demo (Alexander)
+      const user: User = {
+        name: 'Alexander',
+        email: 'alexander@pettime.com',
+        avatar: 'A',
+        role: 'client',
+      };
+      this.setUser(user);
+    }
   }
 
   /**
@@ -94,7 +187,8 @@ export class AuthService {
     const updated: User = {
       ...current,
       ...updates,
-      avatar: updates.name ? updates.name[0].toUpperCase() : current.avatar,
+      // Solo recalcular avatar si no viene explícitamente en updates Y hay un name nuevo
+      avatar: updates.avatar ?? (updates.name ? updates.name[0].toUpperCase() : current.avatar),
     };
 
     this.setUser(updated);

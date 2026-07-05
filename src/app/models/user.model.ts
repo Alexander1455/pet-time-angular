@@ -16,6 +16,12 @@ export interface User {
   email: string;
   /** Inicial del nombre para el avatar visual */
   avatar: string;
+  /** Rol del usuario: 'client' (dueño de mascota) o 'doctor' (veterinario) */
+  role?: 'client' | 'doctor';
+  /** Especialidad médica (solo para doctores) */
+  specialty?: string;
+  /** ID del perfil de doctor asociado (solo para doctores) */
+  doctorId?: string;
   /** Nombres de pila del dueño (capturados en el Paso 2 del registro) */
   nombres?: string;
   /** Apellidos del dueño */
@@ -54,7 +60,18 @@ export interface RegisterData {
   // Paso 3: Primera mascota
   petName: string;
   petType: string;
+  petOtherDetails?: string; // Detalle de tipo de mascota cuando petType === 'otro'
   sexo: string;
   raza: string;
   fechaNac: string;
+}
+
+/** Datos de registro para un doctor / veterinario */
+export interface DoctorRegisterData {
+  email: string;
+  password: string;
+  nombres: string;
+  apellidos: string;
+  specialty: string;
+  availabilities: string[];
 }

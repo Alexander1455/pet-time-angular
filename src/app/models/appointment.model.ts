@@ -34,6 +34,29 @@ export interface Appointment {
   vet: string;
   /** Dirección de la sede */
   address: string;
+  /** ID del doctor asignado a la cita */
+  doctorId?: string;
+  /** Nombre legible del doctor asignado */
+  doctorName?: string;
+  /** Ficha clínica completada por el doctor tras la atención */
+  medicalRecord?: MedicalRecord;
+}
+
+/**
+ * Interface MedicalRecord
+ * Ficha clínica registrada por el veterinario al completar la atención.
+ */
+export interface MedicalRecord {
+  /** Tratamiento o procedimiento realizado (ej: Vacuna Antirrábica aplicada) */
+  treatment: string;
+  /** Medicamentos o insumos utilizados */
+  medications: string;
+  /** Reacciones observadas durante o después de la atención */
+  reactions: string;
+  /** Recomendaciones para el dueño de la mascota */
+  recommendations: string;
+  /** Fecha y hora de atención registrada */
+  attendedAt: string;
 }
 
 /**

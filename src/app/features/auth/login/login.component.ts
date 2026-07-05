@@ -81,7 +81,7 @@ import { InputFieldComponent } from '../../../shared/components/input-field/inpu
   `],
 })
 export class LoginComponent implements OnInit {
-  loginForm!: FormGroup;
+  loginForm: FormGroup;
   loading = false;
   errorMsg = '';
 
@@ -89,19 +89,20 @@ export class LoginComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly router: Router,
-  ) {}
+  ) {
+    // Inicializar el formulario en el constructor para que siempre esté definido
+    // antes de que el template lo use (evita NG01052)
+    this.loginForm = this.fb.group({
+      email:    ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+    });
+  }
 
   ngOnInit(): void {
     // Si ya está autenticado, ir directo al dashboard
     if (this.authService.isAuthenticated()) {
       this.router.navigate(['/app/dashboard']);
-      return;
     }
-
-    this.loginForm = this.fb.group({
-      email:    ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-    });
   }
 
   async onSubmit(): Promise<void> {

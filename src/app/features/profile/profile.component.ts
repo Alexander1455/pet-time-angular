@@ -1,6 +1,3 @@
-// ============================================================
-// profile.component.ts — Perfil de usuario
-// ============================================================
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
@@ -13,6 +10,8 @@ import { AppointmentService } from '../../core/services/appointment.service';
 import { InputFieldComponent } from '../../shared/components/input-field/input-field.component';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
+import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
+import { DemoSwitcherComponent } from '../../shared/components/demo-switcher/demo-switcher.component';
 import { User } from '../../models/user.model';
 
 function passwordMatchValidator(c: AbstractControl): ValidationErrors | null {
@@ -26,9 +25,12 @@ type ModalType = 'edit' | 'password' | 'logout' | null;
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, InputFieldComponent, ModalComponent, BottomNavComponent],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, InputFieldComponent, ModalComponent, BottomNavComponent, SidebarComponent, DemoSwitcherComponent],
   template: `
-    <div class="app-shell" style="max-width:430px;margin:0 auto;min-height:100vh;background:#f8f9fa;padding-bottom:80px;">
+    <div class="page-layout">
+      <app-sidebar></app-sidebar>
+      <div class="page-content">
+      <div class="app-shell" style="max-width:800px;margin:0 auto;min-height:100vh;background:#f8f9fa;padding-bottom:80px;">
 
       <!-- Avatar y estadísticas -->
       <div class="bg-white text-center py-5 px-4 border-bottom">
@@ -155,10 +157,14 @@ type ModalType = 'edit' | 'password' | 'logout' | null;
       </div>
 
       <app-bottom-nav></app-bottom-nav>
-    </div>
+      <app-demo-switcher></app-demo-switcher>
+    </div></div></div>
   `,
   styles: [`
     @keyframes scaleIn { from { transform:scale(0.8);opacity:0; } to { transform:scale(1);opacity:1; } }
+    .page-layout { display: flex; min-height: 100vh; }
+    .page-content { flex: 1; background: #f8f9fa; }
+    @media (min-width: 768px) { .page-content { margin-left: 240px; } }
   `],
 })
 export class ProfileComponent implements OnInit {

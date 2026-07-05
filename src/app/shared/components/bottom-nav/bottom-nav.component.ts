@@ -45,10 +45,9 @@ interface NavItem {
     .bottom-nav {
       position: fixed;
       bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
+      left: 0;
+      right: 0;
       width: 100%;
-      max-width: 430px;
       z-index: 100;
       box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
     }
@@ -72,6 +71,13 @@ interface NavItem {
 
     .nav-item.active .nav-dot {
       background: #32ACDC;
+    }
+
+    /* Ocultar en pantallas de escritorio */
+    @media (min-width: 768px) {
+      .bottom-nav {
+        display: none !important;
+      }
     }
   `],
 })

@@ -27,13 +27,25 @@ html, body {
 }
 
 
-/* ── App Shell — contenedor máximo de 430px (mobile-first) ── */
+/* ── App Shell — mobile-first, fluido en desktop ── */
 .app-shell {
   max-width: 430px;
   margin: 0 auto;
   min-height: 100vh;
   position: relative;
   background: var(--bg-light);
+}
+
+/* En escritorio, el app-shell puede expandirse más */
+@media (min-width: 768px) {
+  .app-shell {
+    max-width: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: #eef2f7;
+  }
 }
 
 /* ── Color primario Bootstrap override ── */

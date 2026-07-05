@@ -24,6 +24,8 @@ export interface PetData {
   raza: string;
   sexo: PetGender;
   fechaNac: string;
+  /** Especificación del tipo de mascota cuando type === 'otro' (ej: Conejo, Hámster) */
+  otherDetails?: string;
 }
 
 /**
@@ -44,6 +46,8 @@ export abstract class Pet {
   protected sexo: PetGender;
   /** Fecha de nacimiento en formato ISO (YYYY-MM-DD) — ENCAPSULAMIENTO (protected) */
   protected fechaNac: string;
+  /** Detalle personalizado para mascotas de tipo 'otro' (ej: Conejo) */
+  protected otherDetails?: string;
 
   constructor(data: PetData) {
     this.id = data.id;
@@ -52,6 +56,7 @@ export abstract class Pet {
     this.raza = data.raza;
     this.sexo = data.sexo;
     this.fechaNac = data.fechaNac;
+    this.otherDetails = data.otherDetails;
   }
 
   // ── Métodos abstractos (POLIMORFISMO) ──────────────────────
@@ -67,6 +72,15 @@ export abstract class Pet {
   getRaza(): string { return this.raza; }
   getSexo(): PetGender { return this.sexo; }
   getFechaNac(): string { return this.fechaNac; }
+  /** Retorna el detalle personalizado de tipo de mascota (para mascotas 'otro') */
+  getOtherDetails(): string | undefined { return this.otherDetails; }
+  /** Retorna el nombre de tipo legible (ej: 'Conejo' si otherDetails está definido) */
+  getTypeLabel(): string {
+    if (this.type === 'otro' && this.otherDetails) return this.otherDetails;
+    if (this.type === 'perro') return 'Perro';
+    if (this.type === 'gato') return 'Gato';
+    return 'Otro';
+  }
 
   /**
    * Calcula la edad de la mascota en años o meses.
@@ -96,6 +110,7 @@ export abstract class Pet {
       raza: this.raza,
       sexo: this.sexo,
       fechaNac: this.fechaNac,
+      otherDetails: this.otherDetails,
     };
   }
 }
@@ -156,12 +171,21 @@ export class OtherPet extends Pet {
 
   /** @override */
   getEmoji(): string {
-    return '🐰';
+    // Asignar emoji según el tipo de mascota especificado
+    const details = this.otherDetails?.toLowerCase() ?? '';
+    if (details.includes('conejo')) return '🐇';
+    if (details.includes('loro') || details.includes('ave') || details.includes('pájaro')) return '🦜';
+    if (details.includes('hámster') || details.includes('hamster')) return '🐹';
+    if (details.includes('tortuga')) return '🐢';
+    if (details.includes('pez')) return '🐟';
+    if (details.includes('serpiente') || details.includes('lagarto')) return '🦎';
+    return '🐾';
   }
 
   /** @override */
   getDescription(): string {
-    return `${this.name} es una mascota de tipo ${this.type}.`;
+    const typeName = this.otherDetails ?? 'mascota especial';
+    return `${this.name} es un(a) ${typeName} de raza ${this.raza}.`;
   }
 }
 

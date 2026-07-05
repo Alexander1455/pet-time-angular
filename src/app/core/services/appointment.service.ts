@@ -2,29 +2,105 @@
 // appointment.service.ts
 // Servicio para gestión de citas en PetTime.
 // Maneja tanto las citas activas como el historial de atenciones.
-//
-// REEMPLAZA: AppContext (ADD_APPOINTMENT, CONFIRM, COMPLETE, CANCEL actions)
+// Soporta filtros por rol (cliente vs. doctor).
 // ============================================================
 
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Appointment, AppointmentStatus } from '../../models/appointment.model';
+import { Appointment, AppointmentStatus, MedicalRecord } from '../../models/appointment.model';
 
 const APPOINTMENTS_KEY = 'pettime_appointments_state';
 const HISTORY_KEY      = 'pettime_history_state';
 
+const VET_NAME    = 'PetTime Clínica Central';
+const VET_ADDRESS = 'Av. Javier Prado Este 1234, San Isidro';
+
 /** Citas de ejemplo pre-cargadas */
 const DEFAULT_APPOINTMENTS: Appointment[] = [
-  { id: 1, service: 'Baño y Corte',        pet: 'Max',  date: '2026-12-20', time: '10:00 AM', status: 'pending',   icon: '🛁', vet: 'Pettime Miraflores', address: 'Av. Larco 450, Miraflores' },
-  { id: 2, service: 'Vacuna Antirrábica',  pet: 'Luna', date: '2026-12-22', time: '02:00 PM', status: 'confirmed', icon: '💉', vet: 'Pettime San Isidro',  address: 'Calle Los Laureles 365, San Isidro' },
+  {
+    id: 1,
+    service: 'Baño y Secado',
+    pet: 'Max',
+    date: '2026-12-20',
+    time: '09:00 AM',
+    status: 'pending',
+    icon: '🛁',
+    vet: VET_NAME,
+    address: VET_ADDRESS,
+    doctorId: 'doc-4',
+    doctorName: 'Dra. Sofía Paredes',
+  },
+  {
+    id: 2,
+    service: 'Vacuna Antirrábica',
+    pet: 'Luna',
+    date: '2026-12-22',
+    time: '10:00 AM',
+    status: 'confirmed',
+    icon: '💉',
+    vet: VET_NAME,
+    address: VET_ADDRESS,
+    doctorId: 'doc-2',
+    doctorName: 'Dra. Laura Méndez',
+  },
 ];
 
 /** Historial de ejemplo pre-cargado */
 const DEFAULT_HISTORY: Appointment[] = [
-  { id: 10, service: 'Consulta General',  pet: 'Max',  date: '2026-03-01', time: '09:00 AM', status: 'completed', icon: '🩺', vet: 'Pettime Miraflores', address: 'Av. Larco 450, Miraflores' },
-  { id: 11, service: 'Desparasitación',   pet: 'Luna', date: '2026-02-15', time: '11:00 AM', status: 'completed', icon: '💊', vet: 'Pettime San Isidro',  address: 'Calle Los Laureles 365, San Isidro' },
-  { id: 12, service: 'Baño y Corte',      pet: 'Max',  date: '2026-01-28', time: '03:00 PM', status: 'cancelled', icon: '🛁', vet: 'Pettime Surco',       address: 'Av. Primavera 890, Santiago de Surco' },
+  {
+    id: 10,
+    service: 'Consulta General',
+    pet: 'Max',
+    date: '2026-03-01',
+    time: '09:00 AM',
+    status: 'completed',
+    icon: '🩺',
+    vet: VET_NAME,
+    address: VET_ADDRESS,
+    doctorId: 'doc-1',
+    doctorName: 'Dr. Carlos Rojas',
+    medicalRecord: {
+      treatment: 'Revisión clínica completa, palpación abdominal y auscultación cardiaca',
+      medications: 'Vitamina B12 inyectable 1ml, suplemento omega-3',
+      reactions: 'Sin reacciones adversas observadas',
+      recommendations: 'Alimentación balanceada, paseo diario de 30 minutos. Control en 3 meses.',
+      attendedAt: '2026-03-01 09:45 AM',
+    },
+  },
+  {
+    id: 11,
+    service: 'Desparasitación',
+    pet: 'Luna',
+    date: '2026-02-15',
+    time: '10:00 AM',
+    status: 'completed',
+    icon: '💊',
+    vet: VET_NAME,
+    address: VET_ADDRESS,
+    doctorId: 'doc-1',
+    doctorName: 'Dr. Carlos Rojas',
+    medicalRecord: {
+      treatment: 'Desparasitación interna y externa completa',
+      medications: 'Milbemax 1 comprimido oral, Frontline spray 250ml aplicado en lomo y cuello',
+      reactions: 'Ligera somnolencia post-administración, normalizada en 2 horas',
+      recommendations: 'Repetir en 30 días. Evitar contacto con otros animales por 48 horas.',
+      attendedAt: '2026-02-15 10:30 AM',
+    },
+  },
+  {
+    id: 12,
+    service: 'Baño y Secado',
+    pet: 'Max',
+    date: '2026-01-28',
+    time: '03:00 PM',
+    status: 'cancelled',
+    icon: '🛁',
+    vet: VET_NAME,
+    address: VET_ADDRESS,
+    doctorId: 'doc-4',
+    doctorName: 'Dra. Sofía Paredes',
+  },
 ];
 
 @Injectable({ providedIn: 'root' })
@@ -64,6 +140,29 @@ export class AppointmentService {
   get appointments(): Appointment[] { return this.appointmentsSubject.value; }
   get history(): Appointment[] { return this.historySubject.value; }
 
+  // ── Métodos filtrados por Rol ─────────────────────────────
+
+  /** Citas filtradas por doctor (para el panel del doctor) */
+  getDoctorAppointments(doctorId: string): Observable<Appointment[]> {
+    return this.appointments$.pipe(
+      map(apts => apts.filter(a => a.doctorId === doctorId))
+    );
+  }
+
+  /** Historial filtrado por doctor */
+  getDoctorHistory(doctorId: string): Observable<Appointment[]> {
+    return this.history$.pipe(
+      map(h => h.filter(a => a.doctorId === doctorId))
+    );
+  }
+
+  /** Obtiene los horarios ya reservados para un doctor en una fecha específica */
+  getBookedTimesForDoctor(doctorId: string, date: string): string[] {
+    return this.appointmentsSubject.value
+      .filter(a => a.doctorId === doctorId && a.date === date && a.status !== 'cancelled')
+      .map(a => a.time);
+  }
+
   // ── Métodos de gestión ─────────────────────────────────────
 
   /**
@@ -87,6 +186,22 @@ export class AppointmentService {
    */
   completeAppointment(id: number): void {
     this.moveToHistory(id, 'completed');
+  }
+
+  /**
+   * Registra la ficha clínica de una cita y la mueve al historial como 'completed'.
+   * Llamado por el doctor al terminar la atención.
+   */
+  registerMedicalRecord(appointmentId: number, record: MedicalRecord): void {
+    const apt = this.appointmentsSubject.value.find(a => a.id === appointmentId);
+    if (!apt) return;
+
+    const updatedApt: Appointment = { ...apt, status: 'completed', medicalRecord: record };
+    const updatedApts = this.appointmentsSubject.value.filter(a => a.id !== appointmentId);
+    const updatedHistory = [...this.historySubject.value, updatedApt];
+
+    this.updateAppointments(updatedApts);
+    this.updateHistory(updatedHistory);
   }
 
   /**

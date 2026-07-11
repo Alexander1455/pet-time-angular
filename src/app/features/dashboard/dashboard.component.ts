@@ -582,6 +582,7 @@ export class DashboardComponent implements OnInit {
   onAddPet(): void {
     if (this.petForm.invalid) { this.petForm.markAllAsTouched(); return; }
     const v = this.petForm.value;
+    const user = this.authService.currentUser;
     this.petService.addPet({
       name: v.petName,
       type: v.petType as PetType,
@@ -589,6 +590,8 @@ export class DashboardComponent implements OnInit {
       sexo: v.sexo as PetGender,
       fechaNac: v.fechaNac ?? '',
       otherDetails: v.petOtherDetails || undefined,
+      ownerEmail: user?.email,
+      ownerName: user?.name,
     });
     this.showAddPet = false;
     this.petForm.reset();

@@ -26,6 +26,10 @@ export interface PetData {
   fechaNac: string;
   /** Especificación del tipo de mascota cuando type === 'otro' (ej: Conejo, Hámster) */
   otherDetails?: string;
+  /** Correo del dueño de la mascota */
+  ownerEmail?: string;
+  /** Nombre del dueño de la mascota */
+  ownerName?: string;
 }
 
 /**
@@ -48,6 +52,10 @@ export abstract class Pet {
   protected fechaNac: string;
   /** Detalle personalizado para mascotas de tipo 'otro' (ej: Conejo) */
   protected otherDetails?: string;
+  /** Correo del dueño — ENCAPSULAMIENTO (protected) */
+  protected ownerEmail?: string;
+  /** Nombre del dueño — ENCAPSULAMIENTO (protected) */
+  protected ownerName?: string;
 
   constructor(data: PetData) {
     this.id = data.id;
@@ -57,6 +65,8 @@ export abstract class Pet {
     this.sexo = data.sexo;
     this.fechaNac = data.fechaNac;
     this.otherDetails = data.otherDetails;
+    this.ownerEmail = data.ownerEmail;
+    this.ownerName = data.ownerName;
   }
 
   // ── Métodos abstractos (POLIMORFISMO) ──────────────────────
@@ -74,6 +84,8 @@ export abstract class Pet {
   getFechaNac(): string { return this.fechaNac; }
   /** Retorna el detalle personalizado de tipo de mascota (para mascotas 'otro') */
   getOtherDetails(): string | undefined { return this.otherDetails; }
+  getOwnerEmail(): string | undefined { return this.ownerEmail; }
+  getOwnerName(): string | undefined { return this.ownerName; }
   /** Retorna el nombre de tipo legible (ej: 'Conejo' si otherDetails está definido) */
   getTypeLabel(): string {
     if (this.type === 'otro' && this.otherDetails) return this.otherDetails;
@@ -111,6 +123,8 @@ export abstract class Pet {
       sexo: this.sexo,
       fechaNac: this.fechaNac,
       otherDetails: this.otherDetails,
+      ownerEmail: this.ownerEmail,
+      ownerName: this.ownerName,
     };
   }
 }

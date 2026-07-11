@@ -15,8 +15,10 @@ const PETS_KEY = 'pettime_pets_state';
 
 /** Mascotas de ejemplo pre-cargadas para demostración */
 const DEFAULT_PETS: PetData[] = [
-  { id: 1, name: 'Max',  type: 'perro', emoji: '🐶', raza: 'Labrador', sexo: 'Macho',  fechaNac: '2022-05-10' },
-  { id: 2, name: 'Luna', type: 'gato',  emoji: '🐱', raza: 'Persa',    sexo: 'Hembra', fechaNac: '2021-08-22' },
+  { id: 1, name: 'Max',  type: 'perro', emoji: '🐶', raza: 'Labrador', sexo: 'Macho',  fechaNac: '2022-05-10', ownerEmail: 'alexander@pettime.com', ownerName: 'Alexander' },
+  { id: 2, name: 'Luna', type: 'gato',  emoji: '🐱', raza: 'Persa',    sexo: 'Hembra', fechaNac: '2021-08-22', ownerEmail: 'alexander@pettime.com', ownerName: 'Alexander' },
+  { id: 3, name: 'Toby', type: 'perro', emoji: '🐶', raza: 'Golden Retriever', sexo: 'Macho', fechaNac: '2023-01-15', ownerEmail: 'maria.gomez@gmail.com', ownerName: 'María Gómez' },
+  { id: 4, name: 'Mimi', type: 'gato',  emoji: '🐱', raza: 'Siamés',   sexo: 'Hembra', fechaNac: '2024-04-10', ownerEmail: 'maria.gomez@gmail.com', ownerName: 'María Gómez' },
 ];
 
 @Injectable({ providedIn: 'root' })

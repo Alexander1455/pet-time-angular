@@ -251,6 +251,7 @@ La aplicación estará disponible en **http://localhost:4200**.
 
 - 🔐 **Autenticación** — Login y registro con persistencia en `localStorage` (auto-detecta doctores)
 - 👥 **Múltiples Roles (B2B/B2C)** — Portal dual para Clientes (dueños) y Doctores (veterinarios)
+- 🔍 **Consulta de Historial por Mascota y Dueño** — Buscador inteligente para doctores que permite buscar por dueño o mascota, ver las mascotas asociadas, seleccionar una y ver todo el historial de atenciones clínicas de ese doctor con acceso a la ficha/formulario de atención
 - 📝 **Fichas Clínicas** — Doctores pueden registrar el tratamiento, medicamentos y recomendaciones médicas
 - 🎭 **Demo Switcher Widget** — Cambia de rol en la presentación con un solo clic en el botón flotante
 - 📐 **Responsividad Premium** — Sidebar oscuro para pantallas grandes (desktop) y Bottom Nav para móviles
@@ -268,8 +269,4 @@ La aplicación estará disponible en **http://localhost:4200**.
 
 ## 👨‍💻 Autor
 
-<<<<<<< HEAD
 Proyecto académico — Angular 19
-=======
-Proyecto académico - Angular 19
->>>>>>> bed495867064c2f34f7af88fdcbde8c518808a60

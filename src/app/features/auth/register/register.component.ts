@@ -321,6 +321,8 @@ export class RegisterComponent {
         sexo: finalData.sexo as PetGender,
         fechaNac: finalData.fechaNac,
         otherDetails: finalData.petOtherDetails,
+        ownerEmail: finalData.email,
+        ownerName: `${finalData.nombres} ${finalData.apellidos}`,
       });
       this.router.navigate(['/app/dashboard']);
     } finally {

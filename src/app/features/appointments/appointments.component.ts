@@ -311,11 +311,15 @@ export class AppointmentsComponent implements OnInit {
     const pets   = this.petService.pets;
     const pet    = pets.find(p => String(p.getId()) === petId);
     const doctor = this.doctorService.findById(doctorId);
+    const user   = this.authService.currentUser;
 
     const appointment: Appointment = {
       id:         Date.now(),
       service:    this.selectedService!.name,
       pet:        pet?.getName() ?? 'Mi mascota',
+      petId:      pet ? pet.getId() : undefined,
+      ownerName:  user?.name ?? 'Alexander',
+      ownerEmail: user?.email ?? 'alexander@pettime.com',
       date,
       time,
       status:     'pending',

@@ -38,6 +38,12 @@ export interface Appointment {
   doctorId?: string;
   /** Nombre legible del doctor asignado */
   doctorName?: string;
+  /** ID de la mascota asociada */
+  petId?: number;
+  /** Nombre del dueño de la mascota */
+  ownerName?: string;
+  /** Correo del dueño de la mascota */
+  ownerEmail?: string;
   /** Ficha clínica completada por el doctor tras la atención */
   medicalRecord?: MedicalRecord;
 }

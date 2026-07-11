@@ -4,9 +4,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { AppointmentService } from '../../core/services/appointment.service';
+import { PetService } from '../../core/services/pet.service';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav.component';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { DemoSwitcherComponent } from '../../shared/components/demo-switcher/demo-switcher.component';
@@ -15,6 +17,7 @@ import { AppointmentStatusPipe, StatusBadgeClassPipe } from '../../shared/pipes/
 import { HighlightAppointmentDirective } from '../../shared/directives/highlight-appointment.directive';
 import { Appointment, MedicalRecord } from '../../models/appointment.model';
 import { User } from '../../models/user.model';
+import { Pet } from '../../models/pet.model';
 
 type HistoryTab = 'todos' | 'completed' | 'cancelled';
 
@@ -24,6 +27,7 @@ type HistoryTab = 'todos' | 'completed' | 'cancelled';
   imports: [
     CommonModule,
     RouterModule,
+    ReactiveFormsModule,
     BottomNavComponent,
     SidebarComponent,
     DemoSwitcherComponent,
@@ -48,10 +52,11 @@ type HistoryTab = 'todos' | 'completed' | 'cancelled';
           </p>
         </div>
 
-        <div class="px-3 pt-3">
+        <!-- CONTENIDO CLIENTE -->
+        <div class="px-3 pt-3" *ngIf="user.role !== 'doctor'">
 
           <!-- Sección: Citas Pendientes (solo cliente) -->
-          <ng-container *ngIf="user.role !== 'doctor' && (appointments$ | async)?.length">
+          <ng-container *ngIf="(appointments$ | async)?.length">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="fw-bold mb-0" style="color:#1a1a2e;font-size:15px;">📅 Citas Pendientes</h5>
               <span class="badge bg-warning text-dark">{{ (appointments$ | async)?.length }} cita(s)</span>
@@ -140,7 +145,7 @@ type HistoryTab = 'todos' | 'completed' | 'cancelled';
                   </div>
 
                   <!-- Botón "Ver Ficha Médica" para clientes (solo si hay ficha) -->
-                  <button *ngIf="user.role !== 'doctor' && h.status === 'completed' && h.medicalRecord"
+                  <button *ngIf="h.status === 'completed' && h.medicalRecord"
                     type="button"
                     class="btn btn-outline-success btn-sm w-100 mt-3 fw-semibold"
                     style="border-radius:10px;font-size:12px;"
@@ -149,7 +154,7 @@ type HistoryTab = 'todos' | 'completed' | 'cancelled';
                   </button>
 
                   <!-- Badge si completada pero sin ficha aún -->
-                  <div *ngIf="user.role !== 'doctor' && h.status === 'completed' && !h.medicalRecord"
+                  <div *ngIf="h.status === 'completed' && !h.medicalRecord"
                     class="mt-3 p-2 rounded-3 text-center" style="background:rgba(50,172,220,0.07);">
                     <p class="mb-0 small text-muted">Ficha clínica no disponible</p>
                   </div>
@@ -167,7 +172,123 @@ type HistoryTab = 'todos' | 'completed' | 'cancelled';
           </ng-template>
         </div>
 
-        <!-- Modal: Ficha Clínica (Vista Cliente) -->
+        <!-- CONTENIDO DOCTOR -->
+        <div class="px-3 pt-3" *ngIf="user.role === 'doctor'">
+          <!-- Buscador -->
+          <div class="mb-4 position-relative">
+            <i class="bi bi-search position-absolute" style="left:14px;top:50%;transform:translateY(-50%);color:#6c757d;z-index:1;"></i>
+            <input type="text" class="form-control ps-5 border-0 shadow-sm"
+              style="border-radius:12px;height:48px;background:#fff;"
+              placeholder="Buscar por nombre de dueño o mascota..."
+              [formControl]="doctorSearchControl">
+          </div>
+
+          <div class="row g-3">
+            <!-- Columna Izquierda: Lista de Dueños y sus Mascotas -->
+            <div class="col-12 col-md-5">
+              <h5 class="fw-bold mb-3" style="color:#1a1a2e;font-size:15px;">Dueños y Mascotas 👥</h5>
+              
+              <div *ngIf="filteredOwners.length === 0" class="text-center py-4 text-muted bg-white rounded-4 shadow-sm">
+                <p class="small mb-0">No se encontraron dueños o mascotas</p>
+              </div>
+              
+              <div *ngFor="let owner of filteredOwners" class="card border-0 shadow-sm mb-3" style="border-radius:16px;">
+                <div class="card-body p-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
+                      style="width:36px;height:36px;background:#198754;font-size:14px;">
+                      {{ owner.name[0] }}
+                    </div>
+                    <div>
+                      <h6 class="fw-bold mb-0" style="color:#1a1a2e;font-size:13px;">{{ owner.name }}</h6>
+                      <p class="text-muted mb-0" style="font-size:11px;">{{ owner.email }}</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Mascotas de este dueño -->
+                  <div class="d-flex flex-wrap gap-2 mt-2">
+                    <button *ngFor="let pet of owner.pets" type="button"
+                      class="btn btn-sm d-flex align-items-center gap-1 py-1 px-2 border-0"
+                      [class.selected-pet-btn]="selectedDoctorPet?.getId() === pet.getId()"
+                      [class.unselected-pet-btn]="selectedDoctorPet?.getId() !== pet.getId()"
+                      style="border-radius:12px;font-size:11px;font-weight:600;transition:all 0.2s;"
+                      (click)="selectDoctorPet(pet)">
+                      {{ pet.getEmoji() }} {{ pet.getName() }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Atenciones de la Mascota Seleccionada -->
+            <div class="col-12 col-md-7">
+              <h5 class="fw-bold mb-3" style="color:#1a1a2e;font-size:15px;">Atenciones Clínicas 🩺</h5>
+              
+              <div *ngIf="!selectedDoctorPet" class="card border-0 shadow-sm text-center py-5" style="border-radius:16px;background:#fff;">
+                <div style="font-size:44px;">🐾</div>
+                <p class="fw-semibold text-muted mt-2 mb-1" style="font-size:14px;">Selecciona una mascota</p>
+                <p class="text-muted small px-3">Elige una mascota de la lista de la izquierda para ver su historial de atenciones contigo.</p>
+              </div>
+
+              <div *ngIf="selectedDoctorPet" class="card border-0 shadow-sm" style="border-radius:16px;background:#fff;">
+                <!-- Detalles de Mascota Seleccionada -->
+                <div class="p-3 border-bottom d-flex align-items-center gap-3" style="background:rgba(25,135,84,0.04);">
+                  <div class="d-flex align-items-center justify-content-center rounded-circle"
+                    style="width:48px;height:48px;background:rgba(25,135,84,0.1);font-size:24px;">
+                    {{ selectedDoctorPet.getEmoji() }}
+                  </div>
+                  <div>
+                    <h6 class="fw-bold mb-0" style="color:#1a1a2e;font-size:14px;">
+                      {{ selectedDoctorPet.getName() }}
+                    </h6>
+                    <p class="text-muted mb-0" style="font-size:11px;">
+                      {{ selectedDoctorPet.getTypeLabel() }} · {{ selectedDoctorPet.getRaza() }} · {{ selectedDoctorPet.getAge() }}
+                    </p>
+                    <p class="text-muted mb-0" style="font-size:10px;">
+                      Dueño: <strong>{{ selectedDoctorPet.getOwnerName() || 'Alexander' }}</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div class="p-3">
+                  <!-- Lista de atenciones hechas por el doctor -->
+                  <div *ngIf="getPetAttentions(selectedDoctorPet, user.doctorId || '').length === 0" class="text-center py-4 text-muted">
+                    <p class="small mb-0">No registras atenciones previas para esta mascota.</p>
+                  </div>
+
+                  <div *ngIf="getPetAttentions(selectedDoctorPet, user.doctorId || '').length > 0" class="d-flex flex-column gap-3">
+                    <div *ngFor="let apt of getPetAttentions(selectedDoctorPet, user.doctorId || '')"
+                      class="p-3 rounded-3 border d-flex justify-content-between align-items-center"
+                      style="background:#f8f9fa;">
+                      <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                          <span style="font-size:18px;">{{ apt.icon }}</span>
+                          <span class="fw-bold text-dark" style="font-size:13px;">{{ apt.service }}</span>
+                        </div>
+                        <div class="text-muted" style="font-size:11px;">
+                          📅 {{ apt.date }} &nbsp;⏰ {{ apt.time }}
+                        </div>
+                        <div class="text-success small fw-semibold mt-1" *ngIf="apt.medicalRecord">
+                          <i class="bi bi-check-circle-fill me-1"></i>Atendido por ti
+                        </div>
+                      </div>
+                      
+                      <!-- Botón ver ficha -->
+                      <button *ngIf="apt.medicalRecord" type="button"
+                        class="btn btn-sm btn-outline-success fw-semibold"
+                        style="border-radius:8px;font-size:11px;"
+                        (click)="openMedicalRecord(apt)">
+                        <i class="bi bi-clipboard2-pulse me-1"></i>Ver Ficha
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal: Ficha Clínica -->
         <app-modal *ngIf="selectedRecord && selectedAppointment"
           [title]="'📋 Ficha Clínica — ' + selectedAppointment.service"
           (closed)="closeMedicalRecord()">
@@ -279,6 +400,18 @@ type HistoryTab = 'todos' | 'completed' | 'cancelled';
       margin: 0;
       line-height: 1.5;
     }
+    .selected-pet-btn {
+      background: #198754;
+      color: #fff !important;
+      box-shadow: 0 4px 10px rgba(25,135,84,0.3);
+    }
+    .unselected-pet-btn {
+      background: rgba(25,135,84,0.08);
+      color: #198754 !important;
+    }
+    .unselected-pet-btn:hover {
+      background: rgba(25,135,84,0.15);
+    }
   `],
 })
 export class HistoryComponent implements OnInit {
@@ -289,6 +422,10 @@ export class HistoryComponent implements OnInit {
   selectedRecord: MedicalRecord | null = null;
   selectedAppointment: Appointment | null = null;
 
+  // Propiedades para el Doctor
+  doctorSearchControl = new FormControl('');
+  selectedDoctorPet: Pet | null = null;
+
   readonly tabs = [
     { key: 'todos'     as HistoryTab, label: 'Todos'       },
     { key: 'completed' as HistoryTab, label: 'Completados' },
@@ -298,6 +435,7 @@ export class HistoryComponent implements OnInit {
   constructor(
     private readonly authService: AuthService,
     private readonly appointmentService: AppointmentService,
+    private readonly petService: PetService,
   ) {
     this.user$ = this.authService.currentUser$;
     this.appointments$ = this.appointmentService.appointments$;
@@ -308,6 +446,58 @@ export class HistoryComponent implements OnInit {
     this.appointmentService.history$.subscribe(() => {
       this.user$.subscribe(user => this.updateFilteredHistory(user)).unsubscribe();
     });
+  }
+
+  get owners(): { name: string; email: string; pets: Pet[] }[] {
+    const pets = this.petService.pets;
+    const groupsMap = new Map<string, { name: string; email: string; pets: Pet[] }>();
+    
+    pets.forEach(pet => {
+      const email = pet.getOwnerEmail() || 'alexander@pettime.com';
+      const name = pet.getOwnerName() || 'Alexander';
+      
+      if (!groupsMap.has(email)) {
+        groupsMap.set(email, { name, email, pets: [] });
+      }
+      groupsMap.get(email)!.pets.push(pet);
+    });
+    
+    return Array.from(groupsMap.values());
+  }
+
+  get filteredOwners(): { name: string; email: string; pets: Pet[] }[] {
+    const query = this.doctorSearchControl.value?.toLowerCase()?.trim() || '';
+    const allOwners = this.owners;
+    if (!query) return allOwners;
+    
+    return allOwners.map(owner => {
+      const matchesOwner = owner.name.toLowerCase().includes(query);
+      const matchingPets = owner.pets.filter(pet => 
+        pet.getName().toLowerCase().includes(query) || 
+        String(pet.getId()).includes(query)
+      );
+      
+      if (matchesOwner || matchingPets.length > 0) {
+        return {
+          ...owner,
+          pets: matchesOwner ? owner.pets : matchingPets
+        };
+      }
+      return null;
+    }).filter((o): o is { name: string; email: string; pets: Pet[] } => o !== null);
+  }
+
+  selectDoctorPet(pet: Pet): void {
+    this.selectedDoctorPet = pet;
+  }
+
+  getPetAttentions(pet: Pet, doctorId: string): Appointment[] {
+    const history = this.appointmentService.history;
+    return history.filter(h => 
+      h.status === 'completed' &&
+      h.doctorId === doctorId &&
+      (h.petId === pet.getId() || (h.pet.toLowerCase() === pet.getName().toLowerCase() && h.ownerEmail === pet.getOwnerEmail()))
+    );
   }
 
   updateFilteredHistory(user: User | null): void {
